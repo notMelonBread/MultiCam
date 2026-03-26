@@ -117,7 +117,7 @@ class ConcurrentCameraController(
             lifecycleOwner
         )
         boundConcurrentCamera = cameraProvider.bindToLifecycle(listOf(backConfig, frontConfig))
-        boundConcurrentCamera?.cameras?.forEach { applyWideAngle(it) }
+        boundConcurrentCamera?.cameras?.forEach { applyZoom(it, enableStabilization) }
         Log.i(TAG, "Concurrent composite camera bound (Fixed Landscape).")
     }
 
@@ -151,12 +151,18 @@ class ConcurrentCameraController(
             CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup
         )
-        applyWideAngle(camera)
+        applyZoom(camera, enableStabilization)
         Log.i(TAG, "Single back camera bound.")
     }
 
-    private fun applyWideAngle(camera: Camera) {
-        camera.cameraControl.setLinearZoom(0.0f)
+    private fun applyZoom(camera: Camera, enableStabilization: Boolean) {
+        if (enableStabilization) {
+            // 手振れ補正対応時: 広角カメラ(1x)を使用。超広角はEIS非対応のため使わない
+            camera.cameraControl.setZoomRatio(1.0f)
+        } else {
+            // 手振れ補正非対応時: 超広角で可能な限り広く映す
+            camera.cameraControl.setLinearZoom(0.0f)
+        }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
