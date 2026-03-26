@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MultiCam</string>
+    <string name="camera_permission_required">カメラ権限が必要です。</string>
+    <string name="audio_permission_optional">音声録音権限がないため無音で録画します。</string>
+    <string name="record_start">録画開始</string>
+    <string name="record_stop">録画停止</string>
+    <string name="recording_indicator">録画中</string>
+    <string name="back_camera_label">背面カメラ</string>
+    <string name="front_camera_label">前面カメラ</string>
+    <string name="front_camera_unavailable">前面カメラはこの構成では利用できません。</string>
+    <string name="preview_unavailable">プレビューを初期化しています…</string>
+    <string name="permission_button">権限を許可</string>
+</resources>
