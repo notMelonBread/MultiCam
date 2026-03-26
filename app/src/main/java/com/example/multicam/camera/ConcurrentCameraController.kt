@@ -156,13 +156,8 @@ class ConcurrentCameraController(
     }
 
     private fun applyZoom(camera: Camera, enableStabilization: Boolean) {
-        if (enableStabilization) {
-            // 手振れ補正対応時: 広角カメラ(1x)を使用。超広角はEIS非対応のため使わない
-            camera.cameraControl.setZoomRatio(1.0f)
-        } else {
-            // 手振れ補正非対応時: 超広角で可能な限り広く映す
-            camera.cameraControl.setLinearZoom(0.0f)
-        }
+        // 超広角を常に使用。EISは対応デバイスでベストエフォートで有効化される
+        camera.cameraControl.setLinearZoom(0.0f)
     }
 
     @SuppressLint("UnsafeOptInUsageError")
