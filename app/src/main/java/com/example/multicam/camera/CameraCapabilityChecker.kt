@@ -81,10 +81,7 @@ class CameraCapabilityChecker(
         val sharedQuality = requestedQuality.sharedQuality
             ?: error("sharedQuality should be available in concurrent composite mode.")
         logs += "Concurrent composite recording selected with quality=$sharedQuality"
-        val stabilizationSupported = requireNotNull(frontCameraInfo).let {
-            stabilizationChecker.isSupported(backCameraInfo) &&
-                stabilizationChecker.isSupported(it)
-        }
+        val stabilizationSupported = stabilizationChecker.isSupported(backCameraInfo)
         logs += "Concurrent stabilization supported: $stabilizationSupported"
         return CameraCapabilityReport(
             mode = CaptureMode.CONCURRENT_COMPOSITE,
