@@ -1,5 +1,6 @@
 package com.example.multicam.camera
 
+import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
@@ -45,6 +46,7 @@ class CompositeRecordingController {
         return requireNotNull(videoCapture)
     }
 
+    @SuppressLint("MissingPermission")
     fun startRecording(
         context: Context,
         enableAudio: Boolean,

@@ -13,6 +13,7 @@ data class CameraCapabilityReport(
     val requestedQuality: Quality,
     val backCameraInfo: CameraInfo,
     val frontCameraInfo: CameraInfo? = null,
+    val isStabilizationSupported: Boolean = false,
     val logs: List<String> = emptyList(),
     val userMessage: String
 )

@@ -1,5 +1,6 @@
 package com.example.multicam.camera
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraCharacteristics
@@ -17,6 +18,8 @@ import com.example.multicam.camera.model.CaptureMode
 class CameraCapabilityChecker(
     private val context: Context
 ) {
+    private val stabilizationChecker = VideoStabilizationChecker()
+
     fun evaluate(cameraProvider: ProcessCameraProvider): CameraCapabilityReport {
         val logs = mutableListOf<String>()
         val backCameraInfo = findCameraInfo(
@@ -36,10 +39,13 @@ class CameraCapabilityChecker(
         val concurrentSupported = supportsFrontBackConcurrent(cameraProvider)
         if (!concurrentSupported) {
             logs += "Concurrent camera is not available. Falling back to single back camera."
+            val stabilizationSupported = stabilizationChecker.isSupported(backCameraInfo)
+            logs += "Back camera stabilization supported: $stabilizationSupported"
             return CameraCapabilityReport(
                 mode = CaptureMode.SINGLE_BACK,
                 requestedQuality = requestedQuality.backOnlyQuality,
                 backCameraInfo = backCameraInfo,
+                isStabilizationSupported = stabilizationSupported,
                 userMessage = "同時カメラ非対応のため背面カメラのみで録画します。",
                 logs = logs
             ).also(::logReport)
@@ -58,11 +64,14 @@ class CameraCapabilityChecker(
                 else -> "合成録画条件を満たせないため背面カメラのみで録画します。"
             }
             logs += "Dual composition is unavailable. Falling back to single back camera."
+            val stabilizationSupported = stabilizationChecker.isSupported(backCameraInfo)
+            logs += "Back camera stabilization supported: $stabilizationSupported"
             return CameraCapabilityReport(
                 mode = CaptureMode.SINGLE_BACK,
                 requestedQuality = requestedQuality.backOnlyQuality,
                 backCameraInfo = backCameraInfo,
                 frontCameraInfo = frontCameraInfo,
+                isStabilizationSupported = stabilizationSupported,
                 userMessage = message,
                 logs = logs
             ).also(::logReport)
@@ -72,11 +81,17 @@ class CameraCapabilityChecker(
         val sharedQuality = requestedQuality.sharedQuality
             ?: error("sharedQuality should be available in concurrent composite mode.")
         logs += "Concurrent composite recording selected with quality=$sharedQuality"
+        val stabilizationSupported = requireNotNull(frontCameraInfo).let {
+            stabilizationChecker.isSupported(backCameraInfo) &&
+                stabilizationChecker.isSupported(it)
+        }
+        logs += "Concurrent stabilization supported: $stabilizationSupported"
         return CameraCapabilityReport(
             mode = CaptureMode.CONCURRENT_COMPOSITE,
             requestedQuality = sharedQuality,
             backCameraInfo = backCameraInfo,
             frontCameraInfo = frontCameraInfo,
+            isStabilizationSupported = stabilizationSupported,
             userMessage = "前後カメラの同時合成録画を使用します。",
             logs = logs
         ).also(::logReport)
@@ -103,6 +118,7 @@ class CameraCapabilityChecker(
         return cameraProvider.availableCameraInfos.firstOrNull { lensFacingOf(it) == lensFacing }
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private fun lensFacingOf(cameraInfo: CameraInfo): Int? {
         return Camera2CameraInfo.from(cameraInfo)
             .getCameraCharacteristic(CameraCharacteristics.LENS_FACING)
