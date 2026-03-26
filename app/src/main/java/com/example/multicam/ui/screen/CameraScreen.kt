@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -283,7 +284,7 @@ private fun CameraOverlay(
     showIndicator: Boolean = uiState.recordingState.isRecording
 ) {
     val context = LocalContext.current
-    ConstraintLayout(modifier = Modifier.fillMaxSize()) {
+    ConstraintLayout(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
         val (msgRef, indicatorRef, recordRef, thumbnailRef) = createRefs()
 
         OverlayMessage(
