@@ -1,8 +1,11 @@
 package com.example.multicam.camera
 
+import android.annotation.SuppressLint
+import android.hardware.camera2.CaptureRequest
 import android.util.Rational
 import android.util.Log
 import android.view.Surface
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -48,14 +51,16 @@ class ConcurrentCameraController(
                 lifecycleOwner = lifecycleOwner,
                 compositePreviewView = compositePreviewView,
                 videoCapture = videoCapture,
-                targetRotation = targetRotation
+                targetRotation = targetRotation,
+                enableStabilization = report.isStabilizationSupported
             )
 
             CaptureMode.SINGLE_BACK -> bindSingleBack(
                 lifecycleOwner = lifecycleOwner,
                 backPreviewView = backPreviewView,
                 videoCapture = videoCapture,
-                targetRotation = targetRotation
+                targetRotation = targetRotation,
+                enableStabilization = report.isStabilizationSupported
             )
         }
     }
@@ -76,9 +81,10 @@ class ConcurrentCameraController(
         lifecycleOwner: LifecycleOwner,
         compositePreviewView: PreviewView,
         videoCapture: VideoCapture<Recorder>,
-        targetRotation: Int
+        targetRotation: Int,
+        enableStabilization: Boolean
     ) {
-        compositePreview = Preview.Builder()
+        compositePreview = buildPreviewBuilder(enableStabilization)
             .setResolutionSelector(buildResolutionSelector())
             .build()
             .also {
@@ -111,7 +117,7 @@ class ConcurrentCameraController(
             lifecycleOwner
         )
         boundConcurrentCamera = cameraProvider.bindToLifecycle(listOf(backConfig, frontConfig))
-        boundConcurrentCamera?.cameras?.forEach { applyWideAngle(it) }
+        boundConcurrentCamera?.cameras?.forEach { applyZoom(it, enableStabilization) }
         Log.i(TAG, "Concurrent composite camera bound (Fixed Landscape).")
     }
 
@@ -119,9 +125,10 @@ class ConcurrentCameraController(
         lifecycleOwner: LifecycleOwner,
         backPreviewView: PreviewView,
         videoCapture: VideoCapture<Recorder>,
-        targetRotation: Int
+        targetRotation: Int,
+        enableStabilization: Boolean
     ) {
-        backPreview = Preview.Builder()
+        backPreview = buildPreviewBuilder(enableStabilization)
             .setResolutionSelector(buildResolutionSelector())
             .build()
             .also {
@@ -144,12 +151,27 @@ class ConcurrentCameraController(
             CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup
         )
-        applyWideAngle(camera)
+        applyZoom(camera, enableStabilization)
         Log.i(TAG, "Single back camera bound.")
     }
 
-    private fun applyWideAngle(camera: Camera) {
+    private fun applyZoom(camera: Camera, enableStabilization: Boolean) {
+        // 超広角を常に使用。EISは対応デバイスでベストエフォートで有効化される
         camera.cameraControl.setLinearZoom(0.0f)
+    }
+
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun buildPreviewBuilder(enableStabilization: Boolean): Preview.Builder {
+        val builder = Preview.Builder()
+        if (enableStabilization) {
+            Camera2Interop.Extender(builder)
+                .setCaptureRequestOption(
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                    CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON
+                )
+            Log.i(TAG, "Video stabilization enabled.")
+        }
+        return builder
     }
 
     private fun buildResolutionSelector(): ResolutionSelector {
